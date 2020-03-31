@@ -18,6 +18,8 @@ int main()
     int insyscall = 0;
     child = fork();
 
+
+    printf("SYS_write = %ld\n",SYS_write);
     // child process : TRACEE
     if(child == 0) {
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
@@ -45,7 +47,7 @@ int main()
             */
 
 
-          printf("%ld %ld %ld %ld\n",orig_eax,orig_ebx,orig_ecx,orig_edx);
+         // printf("%ld %ld %ld %ld\n",orig_eax,orig_ebx,orig_ecx,orig_edx);
           
           if(orig_eax == SYS_write) {
               //printf("inside\n");
