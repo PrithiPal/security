@@ -19,7 +19,7 @@ int main()
     child = fork();
 
 
-    printf("SYS_write = %ld\n",SYS_write);
+    printf("SYS_write = %d\n",SYS_write);
     // child process : TRACEE
     if(child == 0) {
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
