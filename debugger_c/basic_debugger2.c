@@ -21,6 +21,7 @@ int main()
 
     printf("SYS_write = %d\n",SYS_write);
     // child process : TRACEE
+    
     if(child == 0) {
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         execl("/bin/ls", "ls", NULL);
