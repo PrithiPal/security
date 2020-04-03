@@ -105,8 +105,6 @@ void inspectExecutable(char *filename){
     int child_status;
     char buff[100];
 
-    child = fork();
-
     printf("Create child process of %s ? ",filename);
     scanf("%s",buff);
 
