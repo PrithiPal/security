@@ -12,14 +12,20 @@
 
 #define MAX_ARGUMENT_LEN 100 
 
+
 struct CLIArguments {
-    bool is_executable = 0 ; 
-    char executable_name[MAX_ARGUMENT_LEN] = ""; // name of the executable to run as child. 
+    bool is_executable ; 
+    char *executable_name   ; // name of the executable to run as child. 
 }; 
 
 struct DebugSettings {
     bool sys_track ; 
     int sys_track_number ; // sys call number(fd) to track. 
+};
+
+struct ChildSettings{
+    pid_t child_pid ; 
+    int child_status ; 
 };
 
 void printCLIArgument(struct CLIArguments *current_args){
@@ -34,6 +40,14 @@ void printUsage(){
     printf("Usage : %s -e [Executable] ", __FILE__);
 
 }
+
+/*
+void printRegisters(struct user_regs_struct *current_reg_values){
+
+
+
+}
+*/
 
 bool validateUserInput(char *str){
     if(strlen(str) > MAX_ARGUMENT_LEN){
@@ -71,7 +85,6 @@ struct CLIArguments argParser(int argc, char *argv[]){
                     exit(1);
                 }
             }
-
         }
         // long flags 
         else if(strncmp(argv[i],"--",2)==0){
@@ -82,17 +95,10 @@ struct CLIArguments argParser(int argc, char *argv[]){
             printf("not flag ");
         }
 
-       
-    
         i++; 
     }
 
     return my_args; 
-
-}
-
-void parserSessionUserInput(char *string_input){
-
 
 }
 
@@ -117,7 +123,6 @@ void inspectExecutable(char *filename){
             
             // start tracing 
             ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-
             char execute_cmd[2+strlen(filename)];
             sprintf(execute_cmd,"./%s",filename);
             execl(execute_cmd, filename, NULL);
@@ -127,24 +132,46 @@ void inspectExecutable(char *filename){
 
         // parent process  
         {
+            // definition stored in <sys/user.h>
+            struct user_regs_struct regs;
+
             
-            char user_input[MAX_ARGUMENT_LEN]="";
+            char user_input[MAX_ARGUMENT_LEN];
 
-            // only exits when child process exits.     
+            // only exits when child process exits or directly exit from user_input     
             while(1){
-
                 
                 wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
                 if(WIFEXITED(child_status)) break; 
+
                 
-                scanf("%s",user_input);
-                parserSessionUserInput(user_input);
+                ptrace(PTRACE_GETREGS,child,NULL,&regs);
+
+                // stepper program
+                while(1)
+                {   
                 
-                orig_rax = ptrace(PTRACE_PEEKUSER, child, 8 * ORIG_RAX, NULL);
-                printf("The child made a ""system call %ld\n", orig_rax);
+                    scanf("%s",user_input);
+                    printf("Your input = %s\n",user_input);
+                    if(strncmp(user_input,"show regs",9)==0){
+                        printf("show regs command !\n");
+                        break; 
+                    }
+                    else if(strncmp(user_input,"cont",4)==0){
+                        printf("Continue!!\n");
+                        break ; 
+                    }
+                    else{
+                        continue; 
+                    }
+                
+                }
+
+               
+                printf("The child made a ""system call %lld\n", regs.orig_rax);
                     
                 ptrace(PTRACE_SYSCALL, child, NULL, NULL);
-            
+
             }
 
         }

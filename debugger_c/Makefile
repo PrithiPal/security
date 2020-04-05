@@ -1,7 +1,7 @@
 all : basic_debugger basic_debugger2 basic_debugger4 ptrace_toy_example my_debugger
 
 
-my_debugger: my_debugger.c 
+my_debugger: my_debugger.c dummy 
 	gcc my_debugger.c -o my_debugger 
 
 basic_debugger: basic_debugger.c
