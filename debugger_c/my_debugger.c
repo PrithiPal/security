@@ -41,13 +41,113 @@ void printUsage(){
 
 }
 
+
 /*
-void printRegisters(struct user_regs_struct *current_reg_values){
+void processInput(char *inp,int inpSize){
+    printf("received string = %s\n",inp);
+    char input[inpSize];
+    sprintf(input,inp,inpSize);
+    
+    // first argument
+    char *p = strtok(input," "); 
+    printf("p = %s\n",p);
+    
+    char buff[strlen(p)];
+    
+    memset(buff,'0',strlen(p));
+    strcpy(buff,p);
+    lowerString(buff);
+    printf("buff=%s\n",buff);
+    
+    if(strncmp(buff,"show",4)==0){
+        p = strtok(NULL," ");
+        
+        memset(buff,'0',strlen(p));
+        strcpy(buff,p);
+        lowerString(buff);
+        printf("new buff= %s\n",buff);
+        
+        if(strncmp(buff,"rax",3)==0){
+            printf("Rax!!\n");
+        }
+        else if(strncmp(buff,"rbx",3)==0){
+             printf("rbx!!\n");
+        }
+        else if(strncmp(buff,"rcx",3)==0){
+             printf("rcx!!\n");
+        }
+        else if(strncmp(buff,"rdx",3)==0){
+             printf("rdx!!\n");
+        }
+        else if(strncmp(buff,"rsi",3)==0){
+             printf("rsi!!\n");
+        }
+        else if(strncmp(buff,"rdi",3)==0){
+             printf("rdi!!\n");
+        }
+        else if(strncmp(buff,"rsp",3)==0){
+             printf("rsp!!\n");
+        }
+        else if(strncmp(buff,"rbp",3)==0){
+             printf("rbp!!\n");
+        }
+        else if(strncmp(buff,"rip",3)==0){
+             printf("rip!!\n");
+        }
+        else{
+            printf("unrecognized!!\n");
+        }
+        
+    }
 
 
-
+    
 }
 */
+
+void processInput(char *inp, int inpSize){
+    printf("received string = %s , %d\n",inp,inpSize);
+    char newInput[1000];
+    strncpy(newInput,inp,inpSize);
+    printf("received string = %s \n",newInput);
+}
+
+void askInput(){
+    
+    char user_input[1000]; 
+    
+    int userSize = 0 ; 
+    char *ptr = user_input ; 
+    
+    char c ; 
+    do {
+      c = fgetc(stdin);
+      if(feof(stdin)) break; 
+      
+      if(c==' ' && userSize!=0 ){
+        printf("\nnext arg!!\n");
+        *ptr++ = ' '; 
+        userSize++;
+        continue ; 
+      }
+      if(c=='\n'){
+        printf("\nargument finished \n");
+        processInput(user_input,userSize);
+        userSize=0;
+        ptr=user_input; // reset pointer 
+        continue;
+      }
+      else{
+        printf("%c", c);
+        *ptr++ = c; 
+      }
+      userSize++; 
+   } while(1);
+    
+    
+}
+
+
 
 bool validateUserInput(char *str){
     if(strlen(str) > MAX_ARGUMENT_LEN){
@@ -153,7 +253,8 @@ void inspectExecutable(char *filename){
                 
                     scanf("%s",user_input);
                     printf("Your input = %s\n",user_input);
-                    if(strncmp(user_input,"show regs",9)==0){
+
+                    if(strncmp(user_input,"show",4)==0){
                         printf("show regs command !\n");
                         break; 
                     }
@@ -185,8 +286,6 @@ void inspectExecutable(char *filename){
 
 
 }
-
-
 
 
 int main(int argc, char *argv[]){
