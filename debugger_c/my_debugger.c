@@ -9,6 +9,7 @@
 #include <sys/syscall.h>   /* For SYS_write etc */
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #define MAX_ARGUMENT_LEN 100 
 
@@ -41,57 +42,64 @@ void printUsage(){
 
 }
 
+void printDebuggerShellUsage(){
+    char *buff=\
+    "\t ------- Debugger Shell Usage ------- \n"\
+    "\tstart : start the executable passed through command line\n"\
+    "\thelp : Show Debugger Shell Usage\n"\
+    "\texit : Exits the Debugger Shell\n";
+    printf("%s",buff);
+}
 
-/*
+
+void lowerBuffer(char *str, int strSize){
+    for(int i = 0 ; i < strSize; i ++ ){
+        str[i] = tolower(str[i]);
+    }
+}
+
 void processInput(char *inp,int inpSize){
-    printf("received string = %s\n",inp);
-    char input[inpSize];
-    sprintf(input,inp,inpSize);
+    //printf("before string = %s\n",inp);
     
-    // first argument
+    char input[1000]="";
+    
+    strncpy(input,inp,inpSize);
+    lowerBuffer(input,inpSize);
+    
+    //printf("fater = %s\n",input);
+    
+    
     char *p = strtok(input," "); 
     printf("p = %s\n",p);
     
-    char buff[strlen(p)];
-    
-    memset(buff,'0',strlen(p));
-    strcpy(buff,p);
-    lowerString(buff);
-    printf("buff=%s\n",buff);
-    
-    if(strncmp(buff,"show",4)==0){
+    if(strncmp(p,"show",4)==0){
         p = strtok(NULL," ");
-        
-        memset(buff,'0',strlen(p));
-        strcpy(buff,p);
-        lowerString(buff);
-        printf("new buff= %s\n",buff);
-        
-        if(strncmp(buff,"rax",3)==0){
+
+        if(strncmp(p,"rax",3)==0){
             printf("Rax!!\n");
         }
-        else if(strncmp(buff,"rbx",3)==0){
+        else if(strncmp(p,"rbx",3)==0){
              printf("rbx!!\n");
         }
-        else if(strncmp(buff,"rcx",3)==0){
+        else if(strncmp(p,"rcx",3)==0){
              printf("rcx!!\n");
         }
-        else if(strncmp(buff,"rdx",3)==0){
+        else if(strncmp(p,"rdx",3)==0){
              printf("rdx!!\n");
         }
-        else if(strncmp(buff,"rsi",3)==0){
+        else if(strncmp(p,"rsi",3)==0){
              printf("rsi!!\n");
         }
-        else if(strncmp(buff,"rdi",3)==0){
+        else if(strncmp(p,"rdi",3)==0){
              printf("rdi!!\n");
         }
-        else if(strncmp(buff,"rsp",3)==0){
+        else if(strncmp(p,"rsp",3)==0){
              printf("rsp!!\n");
         }
-        else if(strncmp(buff,"rbp",3)==0){
+        else if(strncmp(p,"rbp",3)==0){
              printf("rbp!!\n");
         }
-        else if(strncmp(buff,"rip",3)==0){
+        else if(strncmp(p,"rip",3)==0){
              printf("rip!!\n");
         }
         else{
@@ -100,21 +108,13 @@ void processInput(char *inp,int inpSize){
         
     }
 
-
-    
 }
-*/
 
-void processInput(char *inp, int inpSize){
-    printf("received string = %s , %d\n",inp,inpSize);
-    char newInput[1000];
-    strncpy(newInput,inp,inpSize);
-    printf("received string = %s \n",newInput);
-}
+
 
 void askInput(){
     
-    char user_input[1000]; 
+    char user_input[1000]=""; 
     
     int userSize = 0 ; 
     char *ptr = user_input ; 
@@ -133,6 +133,7 @@ void askInput(){
       if(c=='\n'){
         printf("\nargument finished \n");
         processInput(user_input,userSize);
+       
         userSize=0;
         ptr=user_input; // reset pointer 
         continue;
@@ -169,6 +170,7 @@ struct CLIArguments argParser(int argc, char *argv[]){
             exit(0);
         }
 
+        // note : move the -- statement above because - may also get triggered when -- 
         // short flags 
         if (argv[i][0]=='-'){
             
@@ -202,7 +204,58 @@ struct CLIArguments argParser(int argc, char *argv[]){
 
 }
 
+void StartDebuggingSession(char *filename){
+            printf("Starting %s ... \n",filename);
 
+            child = fork();
+            
+            // child process 
+            if(child == 0) {
+                
+                // start tracing 
+                ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+                char execute_cmd[2+strlen(filename)];
+                sprintf(execute_cmd,"./%s",filename);
+                execl(execute_cmd, filename, NULL);
+            
+            }
+            else
+
+            // parent process  
+            {
+                // definition stored in <sys/user.h>
+                struct user_regs_struct regs;
+
+                
+                char user_input[MAX_ARGUMENT_LEN];
+
+                // only exits when child process exits or directly exit from user_input     
+                while(1){
+                    
+                    wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
+                    if(WIFEXITED(child_status)) break; 
+
+                    
+                    ptrace(PTRACE_GETREGS,child,NULL,&regs);
+
+                    // stepper program shell 
+                    while(1)
+                    {   
+                        printf("%s >>",filename);
+                        scanf("%s",user_input);
+                        askInput();
+                    
+                    }
+
+                
+                    printf("The child made a ""system call %lld\n", regs.orig_rax);
+                    ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+
+                }
+
+            }
+
+}
 // creates a child process with this and parent process tracks the calls. 
 void inspectExecutable(char *filename){
 
@@ -211,79 +264,35 @@ void inspectExecutable(char *filename){
     int child_status;
     char buff[100];
 
-    printf("Create child process of %s ? ",filename);
-    scanf("%s",buff);
+    // note : take the debugger welcome input from the file.
+    printf("Welcome to Prithi's debugger\n");
+    printf("Executable found : %s\n",filename);
 
-    if(strncmp(buff,"yes",3)==0){
-        printf("YESSS!!!!\n");
-        child = fork();
+    // note : validate scanf input.
+
+    // Debugger shell 
+    while(1){
         
-        // child process 
-        if(child == 0) {
-            
-            // start tracing 
-            ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-            char execute_cmd[2+strlen(filename)];
-            sprintf(execute_cmd,"./%s",filename);
-            execl(execute_cmd, filename, NULL);
-        
+        printf(">> ");
+        scanf("%s",buff);     
+
+        if(strncmp(buff,"start",3)==0){
+            StartDebuggingSession(filename);
         }
-        else
-
-        // parent process  
-        {
-            // definition stored in <sys/user.h>
-            struct user_regs_struct regs;
-
-            
-            char user_input[MAX_ARGUMENT_LEN];
-
-            // only exits when child process exits or directly exit from user_input     
-            while(1){
-                
-                wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
-                if(WIFEXITED(child_status)) break; 
-
-                
-                ptrace(PTRACE_GETREGS,child,NULL,&regs);
-
-                // stepper program
-                while(1)
-                {   
-                
-                    scanf("%s",user_input);
-                    printf("Your input = %s\n",user_input);
-
-                    if(strncmp(user_input,"show",4)==0){
-                        printf("show regs command !\n");
-                        break; 
-                    }
-                    else if(strncmp(user_input,"cont",4)==0){
-                        printf("Continue!!\n");
-                        break ; 
-                    }
-                    else{
-                        continue; 
-                    }
-                
-                }
-
-               
-                printf("The child made a ""system call %lld\n", regs.orig_rax);
-                    
-                ptrace(PTRACE_SYSCALL, child, NULL, NULL);
-
-            }
-
+        else if(strncmp(buff,"exit",2)==0){
+            printf("Exiting program .. \n");
+            exit(1);
+        }
+        else if(strncmp(buff,"help",4)==0){
+            printDebuggerShellUsage();
+            continue;
+        }
+        else{
+            printf("Invalid command %s\n",buff);
+            continue;
         }
 
     }
-    else if(strncmp(buff,"no",2)==0){
-        
-        printf("Exiting program .. \n");
-        exit(1);
-    }   
-
 
 }
 
