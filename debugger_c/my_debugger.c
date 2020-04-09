@@ -58,96 +58,6 @@ void lowerBuffer(char *str, int strSize){
     }
 }
 
-void processInput(char *inp,int inpSize){
-    //printf("before string = %s\n",inp);
-    
-    char input[1000]="";
-    
-    strncpy(input,inp,inpSize);
-    lowerBuffer(input,inpSize);
-    
-    //printf("fater = %s\n",input);
-    
-    
-    char *p = strtok(input," "); 
-    printf("p = %s\n",p);
-    
-    if(strncmp(p,"show",4)==0){
-        p = strtok(NULL," ");
-
-        if(strncmp(p,"rax",3)==0){
-            printf("Rax!!\n");
-        }
-        else if(strncmp(p,"rbx",3)==0){
-             printf("rbx!!\n");
-        }
-        else if(strncmp(p,"rcx",3)==0){
-             printf("rcx!!\n");
-        }
-        else if(strncmp(p,"rdx",3)==0){
-             printf("rdx!!\n");
-        }
-        else if(strncmp(p,"rsi",3)==0){
-             printf("rsi!!\n");
-        }
-        else if(strncmp(p,"rdi",3)==0){
-             printf("rdi!!\n");
-        }
-        else if(strncmp(p,"rsp",3)==0){
-             printf("rsp!!\n");
-        }
-        else if(strncmp(p,"rbp",3)==0){
-             printf("rbp!!\n");
-        }
-        else if(strncmp(p,"rip",3)==0){
-             printf("rip!!\n");
-        }
-        else{
-            printf("unrecognized!!\n");
-        }
-        
-    }
-
-}
-
-
-
-void askInput(){
-    
-    char user_input[1000]=""; 
-    
-    int userSize = 0 ; 
-    char *ptr = user_input ; 
-    
-    char c ; 
-    do {
-      c = fgetc(stdin);
-      if(feof(stdin)) break; 
-      
-      if(c==' ' && userSize!=0 ){
-        printf("\nnext arg!!\n");
-        *ptr++ = ' '; 
-        userSize++;
-        continue ; 
-      }
-      if(c=='\n'){
-        printf("\nargument finished \n");
-        processInput(user_input,userSize);
-       
-        userSize=0;
-        ptr=user_input; // reset pointer 
-        continue;
-      }
-      else{
-        printf("%c", c);
-        *ptr++ = c; 
-      }
-      userSize++; 
-   } while(1);
-    
-    
-}
-
 
 
 bool validateUserInput(char *str){
@@ -204,64 +114,142 @@ struct CLIArguments argParser(int argc, char *argv[]){
 
 }
 
+
+int processInput(char *inp,int inpSize){
+    //printf("before string = %s\n",inp);
+    if(inpSize==0){
+        printf("Illegal command\n");
+        return 1 ; 
+    }
+    char input[1000]="";
+    
+    strncpy(input,inp,inpSize);
+    lowerBuffer(input,inpSize);
+    
+    //printf("fater = %s\n",input);
+    
+    
+    char *p = strtok(input," "); 
+    printf("p = %s\n",p);
+    
+    if(strncmp(p,"show",4)==0){
+        p = strtok(NULL," ");
+
+        if(strncmp(p,"rax",3)==0){
+            printf("Rax!!\n");
+        }
+        else if(strncmp(p,"rbx",3)==0){
+             printf("rbx!!\n");
+        }
+        else if(strncmp(p,"rcx",3)==0){
+             printf("rcx!!\n");
+        }
+        else if(strncmp(p,"rdx",3)==0){
+             printf("rdx!!\n");
+        }
+        else if(strncmp(p,"rsi",3)==0){
+             printf("rsi!!\n");
+        }
+        else if(strncmp(p,"rdi",3)==0){
+             printf("rdi!!\n");
+        }
+        else if(strncmp(p,"rsp",3)==0){
+             printf("rsp!!\n");
+        }
+        else if(strncmp(p,"rbp",3)==0){
+             printf("rbp!!\n");
+        }
+        else if(strncmp(p,"rip",3)==0){
+             printf("rip!!\n");
+        }
+        else{
+            printf("unrecognized!!\n");
+        }
+        
+    }
+    else if(strncmp(p,"cont",4)==0){
+
+        return 0 ; 
+    }
+    else{
+        printf("unrecognized command %s\n",p);
+    }
+
+    return 1 ; 
+
+}
+
+
+
+
 void StartDebuggingSession(char *filename){
-            printf("Starting %s ... \n",filename);
+    pid_t child;
+    long orig_rax;
+    int child_status;
+    int user_buffer_size=0;
 
-            child = fork();
+    //printf("Starting %s ... \n",filename);
+    child = fork();
+    
+    // child process 
+    if(child == 0) {
+        // start tracing 
+        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        char execute_cmd[2+strlen(filename)];
+        sprintf(execute_cmd,"./%s",filename);
+        execl(execute_cmd, filename, NULL);
+    
+    }
+    else
+    // parent process  
+    {
+        // definition stored in <sys/user.h>
+        struct user_regs_struct regs;
+        char user_input[MAX_ARGUMENT_LEN]="";
+        char *ptr = user_input ; 
+        int is_step = 1 ; 
+        int userSize = 0 ; 
+        char ch ; 
+        // only exits when child process exits or directly exit from user_input     
+        while(1){
             
-            // child process 
-            if(child == 0) {
-                
-                // start tracing 
-                ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-                char execute_cmd[2+strlen(filename)];
-                sprintf(execute_cmd,"./%s",filename);
-                execl(execute_cmd, filename, NULL);
+            wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
+            if(WIFEXITED(child_status)) break; 
+            ptrace(PTRACE_GETREGS,child,NULL,&regs);
             
-            }
-            else
-
-            // parent process  
-            {
-                // definition stored in <sys/user.h>
-                struct user_regs_struct regs;
-
+            // stepper program shell   
+            while(1){
+                  
+                printf("%s >> ",filename);
                 
-                char user_input[MAX_ARGUMENT_LEN];
-
-                // only exits when child process exits or directly exit from user_input     
-                while(1){
-                    
-                    wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
-                    if(WIFEXITED(child_status)) break; 
-
-                    
-                    ptrace(PTRACE_GETREGS,child,NULL,&regs);
-
-                    // stepper program shell 
-                    while(1)
-                    {   
-                        printf("%s >>",filename);
-                        scanf("%s",user_input);
-                        askInput();
-                    
+                // parses user input 
+                while(1){    
+                    ch = fgetc(stdin) ; 
+                    if(ch=='\n'){
+                        is_step = processInput(user_input,userSize);
+                        ptr = user_input ; 
+                        break ;  
+                    }else{
+                        *ptr++ = ch ; 
+                        userSize++; 
                     }
-
-                
-                    printf("The child made a ""system call %lld\n", regs.orig_rax);
-                    ptrace(PTRACE_SYSCALL, child, NULL, NULL);
-
-                }
-
+                    
+                }  
+                userSize = 0 ; 
+                if(!is_step) break ; 
             }
+
+            printf("The child made a system call %lld\n", regs.orig_rax);
+            ptrace(PTRACE_SYSCALL, child, NULL, NULL);
+            
+        }
+
+    }
 
 }
 // creates a child process with this and parent process tracks the calls. 
 void inspectExecutable(char *filename){
 
-    pid_t child;
-    long orig_rax;
-    int child_status;
     char buff[100];
 
     // note : take the debugger welcome input from the file.
@@ -295,6 +283,7 @@ void inspectExecutable(char *filename){
     }
 
 }
+
 
 
 int main(int argc, char *argv[]){
