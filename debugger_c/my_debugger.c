@@ -115,8 +115,10 @@ struct CLIArguments argParser(int argc, char *argv[]){
 }
 
 
-int processInput(char *inp,int inpSize){
+int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
     //printf("before string = %s\n",inp);
+    
+    // input validation control-block.
     if(inpSize==0){
         printf("Illegal command\n");
         return 1 ; 
@@ -126,41 +128,44 @@ int processInput(char *inp,int inpSize){
     strncpy(input,inp,inpSize);
     lowerBuffer(input,inpSize);
     
-    //printf("fater = %s\n",input);
-    
     
     char *p = strtok(input," "); 
-    printf("p = %s\n",p);
+    //printf("p = %s\n",p);
     
     if(strncmp(p,"show",4)==0){
         p = strtok(NULL," ");
+        
+        if(p==NULL){
+            printf("unrecognized command\n");
+            return 1 ; 
+        }
 
         if(strncmp(p,"rax",3)==0){
-            printf("Rax!!\n");
+            printf("rax : %lld (0x%llx)\n",reg->orig_rax,reg->orig_rax);
         }
         else if(strncmp(p,"rbx",3)==0){
-             printf("rbx!!\n");
+            printf("rbx : %lld (0x%llx)\n",reg->rbx,reg->rbx);
         }
         else if(strncmp(p,"rcx",3)==0){
-             printf("rcx!!\n");
+            printf("rcx : %lld (0x%llx)\n",reg->rcx,reg->rcx);
         }
         else if(strncmp(p,"rdx",3)==0){
-             printf("rdx!!\n");
+            printf("rdx : %lld (0x%llx)\n",reg->rdx,reg->rdx);
         }
         else if(strncmp(p,"rsi",3)==0){
-             printf("rsi!!\n");
+            printf("rsi : %lld (0x%llx)\n",reg->rsi,reg->rsi);
         }
         else if(strncmp(p,"rdi",3)==0){
-             printf("rdi!!\n");
+            printf("rdi : %lld (0x%llx)\n",reg->rdi,reg->rdi);
         }
         else if(strncmp(p,"rsp",3)==0){
-             printf("rsp!!\n");
+            printf("rsp : %lld (0x%llx)\n",reg->rsp,reg->rsp);
         }
         else if(strncmp(p,"rbp",3)==0){
-             printf("rbp!!\n");
+            printf("rbp : %lld (0x%llx)\n",reg->rbp,reg->rbp);
         }
         else if(strncmp(p,"rip",3)==0){
-             printf("rip!!\n");
+            printf("rip : %lld (0x%llx)\n",reg->rip,reg->rip);
         }
         else{
             printf("unrecognized!!\n");
@@ -170,6 +175,10 @@ int processInput(char *inp,int inpSize){
     else if(strncmp(p,"cont",4)==0){
 
         return 0 ; 
+    }
+    else if(strncmp(p,"exit",4)==0){
+        printf("Exiting ... \n");
+        exit(1);
     }
     else{
         printf("unrecognized command %s\n",p);
@@ -217,7 +226,8 @@ void StartDebuggingSession(char *filename){
             if(WIFEXITED(child_status)) break; 
             ptrace(PTRACE_GETREGS,child,NULL,&regs);
             
-            // stepper program shell   
+            // stepper program shell
+            ch = fgetc(stdin) ;    
             while(1){
                   
                 printf("%s >> ",filename);
@@ -226,8 +236,10 @@ void StartDebuggingSession(char *filename){
                 while(1){    
                     ch = fgetc(stdin) ; 
                     if(ch=='\n'){
-                        is_step = processInput(user_input,userSize);
+                        is_step = processInput(user_input,userSize,&regs);
                         ptr = user_input ; 
+                        
+                        
                         break ;  
                     }else{
                         *ptr++ = ch ; 
