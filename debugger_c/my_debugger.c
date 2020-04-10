@@ -17,6 +17,8 @@
 struct CLIArguments {
     bool is_executable ; 
     char *executable_name   ; // name of the executable to run as child. 
+    bool is_attachable ; 
+    pid_t attachable_pid ; 
 }; 
 
 struct DebugSettings {
@@ -45,7 +47,7 @@ void printUsage(){
 void printDebuggerShellUsage(){
     char *buff=\
     "\t ------- Debugger Shell Usage ------- \n"\
-    "\tstart : start the executable passed through command line\n"\
+    "\tstart : start the executable passed or attached process through command line\n"\
     "\thelp : Show Debugger Shell Usage\n"\
     "\texit : Exits the Debugger Shell\n";
     printf("%s",buff);
@@ -88,6 +90,7 @@ struct CLIArguments argParser(int argc, char *argv[]){
             if(argv[i][1]=='e'){
                 
                 my_args.is_executable = true ; 
+                my_args.is_attachable = false ; 
             
                 if(validateUserInput(argv[i+1]))  {
                     my_args.executable_name = argv[i+1];
@@ -97,14 +100,23 @@ struct CLIArguments argParser(int argc, char *argv[]){
                     exit(1);
                 }
             }
-        }
-        // long flags 
-        else if(strncmp(argv[i],"--",2)==0){
-            printf("double flag ");
-        }
-        // constants 
-        else{
-            printf("not flag ");
+            // attached external process 
+            else if(argv[i][1]=='a'){
+                my_args.is_executable = false ; 
+                my_args.is_attachable = true ; 
+
+                if(argv[i+1]){
+                    my_args.attachable_pid = (pid_t) atoi(argv[i+1]) ; 
+                    printf("good attachable = %d \n",my_args.attachable_pid ); 
+                    i++ ; 
+                }
+                else{
+                    
+                    exit(1); 
+                }
+
+
+            }
         }
 
         i++; 
@@ -260,13 +272,23 @@ void StartDebuggingSession(char *filename){
 
 }
 // creates a child process with this and parent process tracks the calls. 
-void inspectExecutable(char *filename){
+void inspectExecutable(struct CLIArguments *cli_args){
 
     char buff[100];
-
+    char filename[MAX_ARGUMENT_LEN] = "" ; 
+    pid_t attach_pid = 0 ; 
     // note : take the debugger welcome input from the file.
     printf("Welcome to Prithi's debugger\n");
-    printf("Executable found : %s\n",filename);
+    
+    if(cli_args->is_executable){
+        strcpy(filename,cli_args->executable_name); 
+        printf("Executable found : %s\n",filename);
+    }
+    else if(cli_args->is_attachable){
+        attach_pid = cli_args->attachable_pid ; 
+        printf("Executable found : %s\n",filename);
+    }
+    
 
     // note : validate scanf input.
 
@@ -277,7 +299,8 @@ void inspectExecutable(char *filename){
         scanf("%s",buff);     
 
         if(strncmp(buff,"start",3)==0){
-            StartDebuggingSession(filename);
+            if(cli_args->is_executable) StartDebuggingSession(filename);
+            if(cli_args->is_attachable) printf("START ATTACHABLE SESSION with pid %d\n",cli_args->attachable_pid); 
         }
         else if(strncmp(buff,"exit",2)==0){
             printf("Exiting program .. \n");
@@ -302,10 +325,9 @@ int main(int argc, char *argv[]){
 
 
     struct CLIArguments my_cli_args = argParser(argc,argv);
+    inspectExecutable(&my_cli_args);
     
-    if(my_cli_args.is_executable){
-        inspectExecutable(my_cli_args.executable_name);
-    }
+
 
     return 0 ; 
 
