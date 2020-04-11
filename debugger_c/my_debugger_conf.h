@@ -1,6 +1,0 @@
-#ifndef MY_DEBUGGER_CONF_H
-#define MY_DEBUGGER_CONF_H
-
-#define MAX_ARGUMENT_LEN 100 
-
-#endif 

@@ -8,6 +8,13 @@
 #include "arg_parser.h"
 
 
+struct CLIArguments argParser(int argc, char *argv[]); 
+void printCLIArgument(struct CLIArguments *current_args);
+void printUsage();
+bool validateUserInput(char *str);
+
+static int i = 2 ; 
+
 struct CLIArguments argParser(int argc, char *argv[]){
 
     struct CLIArguments my_args; 
@@ -83,3 +90,9 @@ bool validateUserInput(char *str){
     }
     return true ; 
 }
+
+/*
+int main(){
+    return 0 ; 
+}
+*/

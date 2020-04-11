@@ -10,10 +10,7 @@ struct CLIArguments {
     pid_t attachable_pid ; 
 };
 
-struct CLIArguments argParser(int argc, char *argv[]); 
-void printCLIArgument(struct CLIArguments *current_args);
-void printUsage();
-bool validateUserInput(char *str);
 
+struct CLIArguments argParser(int argc, char *argv[]);
 
 #endif 
