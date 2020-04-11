@@ -19,8 +19,15 @@ struct CLIArguments argParser(int argc, char *argv[]){
 
     struct CLIArguments my_args; 
     char **arg = argv; 
-    int i = 0 ; 
+    int i = 1 ; // first arg is ./my_debugger
     
+    printf("argc=%d\n",argc);
+    
+    if(argc == 1){
+        printUsage(); 
+        exit(1);         
+    }
+
     while(i < argc ){
 
         if (strlen(argv[i]) > MAX_ARGUMENT_LEN){
@@ -34,15 +41,18 @@ struct CLIArguments argParser(int argc, char *argv[]){
             
             // executable file provided.
             if(argv[i][1]=='e'){
-                
+
                 my_args.is_executable = true ; 
                 my_args.is_attachable = false ; 
-            
-                if(validateUserInput(argv[i+1]))  {
+
+
+                if(argv[i+1])  {
                     my_args.executable_name = argv[i+1];
                     printf("good input = %s \n",my_args.executable_name ); 
                     i++; 
-                }else{
+                }
+                else{
+                    printUsage(); 
                     exit(1);
                 }
             }
@@ -57,15 +67,33 @@ struct CLIArguments argParser(int argc, char *argv[]){
                     i++ ; 
                 }
                 else{
-                    exit(1); 
+                    printUsage(); 
+                    exit(1);
                 }
 
 
             }
+            // Help Usage
+            else if(argv[i][1]=='h'){
+                printUsage(); 
+                exit(1);
+            }
+            else{
+                printUsage(); 
+                exit(1);                
+            }
+        }
+        else{
+                printUsage(); 
+                exit(1);            
         }
 
+        
         i++; 
+
+
     }
+    printf("completed!\n");
 
     return my_args; 
 
@@ -79,8 +107,9 @@ void printCLIArgument(struct CLIArguments *current_args){
 }
 
 void printUsage(){
-
-    printf("Usage : %s -e [Executable] ", __FILE__);
+    printf("Usage:\n");
+    printf("%s -e [Executable] \n", __FILE__);
+    printf("%s -a [PID] \n",__FILE__);
 
 }
 
