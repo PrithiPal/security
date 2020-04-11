@@ -8,7 +8,7 @@ Tools used for analysis.
 
 Files : 
 
-crackme0x00a - readme available
-crackme0x00b - N/A
-crackme0x01 - N/A
-crackme0x02 - readme available
+- crackme0x00a - readme available
+- crackme0x00b - N/A
+- crackme0x01 - N/A
+- crackme0x02 - readme available
