@@ -11,15 +11,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-#define MAX_ARGUMENT_LEN 100 
+#include "arg_parser.h"
 
-
-struct CLIArguments {
-    bool is_executable ; 
-    char *executable_name   ; // name of the executable to run as child. 
-    bool is_attachable ; 
-    pid_t attachable_pid ; 
-}; 
 
 struct DebugSettings {
     bool sys_track ; 
@@ -31,18 +24,7 @@ struct ChildSettings{
     int child_status ; 
 };
 
-void printCLIArgument(struct CLIArguments *current_args){
 
-    printf("is_executable : %d\n",current_args->is_executable);
-    printf("executable_name = %s\n",current_args->executable_name);
-    
-}
-
-void printUsage(){
-
-    printf("Usage : %s -e [Executable] ", __FILE__);
-
-}
 
 void printDebuggerShellUsage(){
     char *buff=\
@@ -60,71 +42,6 @@ void lowerBuffer(char *str, int strSize){
     }
 }
 
-
-
-bool validateUserInput(char *str){
-    if(strlen(str) > MAX_ARGUMENT_LEN){
-        return false ; 
-    }
-    return true ; 
-}
-
-struct CLIArguments argParser(int argc, char *argv[]){
-
-    struct CLIArguments my_args; 
-    char **arg = argv; 
-    int i = 0 ; 
-    
-    while(i < argc ){
-
-        if (strlen(argv[i]) > MAX_ARGUMENT_LEN){
-            printf("Argument max length is 100\n");
-            exit(0);
-        }
-
-        // note : move the -- statement above because - may also get triggered when -- 
-        // short flags 
-        if (argv[i][0]=='-'){
-            
-            // executable file provided.
-            if(argv[i][1]=='e'){
-                
-                my_args.is_executable = true ; 
-                my_args.is_attachable = false ; 
-            
-                if(validateUserInput(argv[i+1]))  {
-                    my_args.executable_name = argv[i+1];
-                    printf("good input = %s \n",my_args.executable_name ); 
-                    i++; 
-                }else{
-                    exit(1);
-                }
-            }
-            // attached external process 
-            else if(argv[i][1]=='a'){
-                my_args.is_executable = false ; 
-                my_args.is_attachable = true ; 
-
-                if(argv[i+1]){
-                    my_args.attachable_pid = (pid_t) atoi(argv[i+1]) ; 
-                    printf("good attachable = %d \n",my_args.attachable_pid ); 
-                    i++ ; 
-                }
-                else{
-                    
-                    exit(1); 
-                }
-
-
-            }
-        }
-
-        i++; 
-    }
-
-    return my_args; 
-
-}
 
 
 int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
@@ -286,7 +203,7 @@ void inspectExecutable(struct CLIArguments *cli_args){
     }
     else if(cli_args->is_attachable){
         attach_pid = cli_args->attachable_pid ; 
-        printf("Executable found : %s\n",filename);
+        printf("Attachable found : %d\n",attach_pid);
     }
     
 
@@ -326,7 +243,6 @@ int main(int argc, char *argv[]){
 
     struct CLIArguments my_cli_args = argParser(argc,argv);
     inspectExecutable(&my_cli_args);
-    
 
 
     return 0 ; 
