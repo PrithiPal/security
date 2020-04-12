@@ -4,14 +4,13 @@
 
 int main(){
 
-    int i ; 
-    for(int i = 0 ; i < 10; ++i){
+    int i = 100; 
+    while(i--){
         printf("Counter  ; %d\n",i);
-        sleep(4);
-    
+        sleep(1);
+        
     }
 
-    return 0 ; 
-
+    exit(1);
 
 }

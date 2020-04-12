@@ -6,6 +6,7 @@
 struct CLIArguments {
     bool is_executable ; 
     char *executable_name   ; // name of the executable to run as child. 
+    pid_t exec_pid ; 
     bool is_attachable ; 
     pid_t attachable_pid ; 
 };

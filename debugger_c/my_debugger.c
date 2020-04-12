@@ -14,6 +14,7 @@
 #include "arg_parser.h"
 
 
+
 struct DebugSettings {
     bool sys_track ; 
     int sys_track_number ; // sys call number(fd) to track. 
@@ -43,8 +44,7 @@ void lowerBuffer(char *str, int strSize){
 }
 
 
-
-int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
+int processInput(char *inp,int inpSize, struct user_regs_struct *reg, struct CLIArguments *cli_args){
     //printf("before string = %s\n",inp);
     
     // input validation control-block.
@@ -56,7 +56,6 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
     
     strncpy(input,inp,inpSize);
     lowerBuffer(input,inpSize);
-    
     
     char *p = strtok(input," "); 
     //printf("p = %s\n",p);
@@ -107,6 +106,12 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
     }
     else if(strncmp(p,"exit",4)==0){
         printf("Exiting ... \n");
+
+        if(cli_args->is_executable) kill(cli_args->exec_pid,SIGKILL);  
+        if(cli_args->is_attachable) kill(cli_args->attachable_pid,SIGKILL);  
+
+        wait(NULL); 
+
         exit(1);
     }
     else{
@@ -120,7 +125,11 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg ){
 
 
 
-void StartDebuggingSession(char *filename){
+void StartTracemeSession(struct CLIArguments *cli_args){
+    
+    char *filename = cli_args->executable_name ; 
+    printf("Creating instance and tracking %s ... \n",filename);
+
     pid_t child;
     long orig_rax;
     int child_status;
@@ -132,11 +141,14 @@ void StartDebuggingSession(char *filename){
     // child process 
     if(child == 0) {
         // start tracing 
+        
+        cli_args->exec_pid = getpid() ; 
+        printf("[%d] %s  \n",cli_args->exec_pid,filename);
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         char execute_cmd[2+strlen(filename)];
         sprintf(execute_cmd,"./%s",filename);
         execl(execute_cmd, filename, NULL);
-    
+
     }
     else
     // parent process  
@@ -165,10 +177,8 @@ void StartDebuggingSession(char *filename){
                 while(1){    
                     ch = fgetc(stdin) ; 
                     if(ch=='\n'){
-                        is_step = processInput(user_input,userSize,&regs);
+                        is_step = processInput(user_input,userSize,&regs,cli_args);
                         ptr = user_input ; 
-                        
-                        
                         break ;  
                     }else{
                         *ptr++ = ch ; 
@@ -187,6 +197,54 @@ void StartDebuggingSession(char *filename){
 
     }
 
+}
+
+
+
+void StartAttachSession(struct CLIArguments *cli_args){
+
+    printf("Attaching %d to debugger ... \n",cli_args->attachable_pid); 
+    
+    struct user_regs_struct regs;
+    char user_input[MAX_ARGUMENT_LEN]="";
+    char *ptr = user_input ; 
+    int is_step = 1 ; 
+    int userSize = 0 ; 
+    char ch ; 
+    int status;  
+
+    ptrace(PTRACE_ATTACH,cli_args->attachable_pid,NULL,NULL); 
+
+    
+    while(1){
+        wait(&status); 
+        if(WIFEXITED(status)) break; 
+        ptrace(PTRACE_GETREGS,cli_args->attachable_pid,NULL,&regs);
+
+        ch = fgetc(stdin) ;
+
+        while(1){
+
+            printf("%d >> ",cli_args->attachable_pid);
+            // parses user input 
+            
+            while(1){    
+                ch = fgetc(stdin) ; 
+                if(ch=='\n'){
+                    is_step = processInput(user_input,userSize,&regs,cli_args);
+                    ptr = user_input ; 
+                    break ;  
+                }
+                else{
+                    *ptr++ = ch ; 
+                    userSize++; 
+                }
+            }        
+            userSize = 0 ; 
+            if(!is_step) break ;        
+        
+        }
+    }
 }
 // creates a child process with this and parent process tracks the calls. 
 void inspectExecutable(struct CLIArguments *cli_args){
@@ -216,8 +274,8 @@ void inspectExecutable(struct CLIArguments *cli_args){
         scanf("%s",buff);     
 
         if(strncmp(buff,"start",3)==0){
-            if(cli_args->is_executable) StartDebuggingSession(filename);
-            if(cli_args->is_attachable) printf("START ATTACHABLE SESSION with pid %d\n",cli_args->attachable_pid); 
+            if(cli_args->is_executable) StartTracemeSession(cli_args);
+            if(cli_args->is_attachable) StartAttachSession(cli_args);
         }
         else if(strncmp(buff,"exit",2)==0){
             printf("Exiting program .. \n");
