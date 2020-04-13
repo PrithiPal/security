@@ -47,6 +47,7 @@ struct CLIArguments argParser(int argc, char *argv[]){
 
 
                 if(argv[i+1])  {
+
                     my_args.executable_name = argv[i+1];
                     printf("good input = %s \n",my_args.executable_name ); 
                     i++; 
@@ -62,7 +63,7 @@ struct CLIArguments argParser(int argc, char *argv[]){
                 my_args.is_attachable = true ; 
 
                 if(argv[i+1]){
-                    my_args.attachable_pid = (pid_t) atoi(argv[i+1]) ; 
+                    my_args.attachable_pid =  atoi(argv[i+1]) ; 
                     printf("good attachable = %d \n",my_args.attachable_pid ); 
                     i++ ; 
                 }

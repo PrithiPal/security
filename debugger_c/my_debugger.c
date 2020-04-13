@@ -95,6 +95,28 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg, struct CLI
         else if(strncmp(p,"rip",3)==0){
             printf("rip : %lld (0x%llx)\n",reg->rip,reg->rip);
         }
+        else if(strncmp(p,"regs",4)==0){
+            printf("rax : %lld (0x%llx)\n" 
+            "rbx : %lld (0x%llx)\n" 
+            "rcx : %lld (0x%llx)\n" 
+            "rdx : %lld (0x%llx)\n"  
+            "rsi : %lld (0x%llx)\n"  
+            "rdi : %lld (0x%llx)\n" 
+            "rsp : %lld (0x%llx)\n" 
+            "rbp : %lld (0x%llx)\n"  
+            "rip : %lld (0x%llx)\n" 
+            , reg->orig_rax,reg->orig_rax  
+            , reg->rbx,reg->rbx  
+            , reg->rcx,reg->rcx  
+            , reg->rdx,reg->rdx  
+            , reg->rsi,reg->rsi  
+            , reg->rdi,reg->rdi 
+            , reg->rsp,reg->rsp  
+            , reg->rbp,reg->rbp 
+            , reg->rip,reg->rip
+            );     
+
+        }
         else{
             printf("unrecognized!!\n");
         }
@@ -264,7 +286,6 @@ void inspectExecutable(struct CLIArguments *cli_args){
         printf("Attachable found : %d\n",attach_pid);
     }
     
-
     // note : validate scanf input.
 
     // Debugger shell 
