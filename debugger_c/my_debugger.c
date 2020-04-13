@@ -115,7 +115,6 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg, struct CLI
             , reg->rbp,reg->rbp 
             , reg->rip,reg->rip
             );     
-
         }
         else{
             printf("unrecognized!!\n");
@@ -128,9 +127,10 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg, struct CLI
     }
     else if(strncmp(p,"exit",4)==0){
         printf("Exiting ... \n");
-
+        
+        //if(cli_args->is_executable) printf("TO KILL = %d\n",cli_args->exec_pid); 
         if(cli_args->is_executable) kill(cli_args->exec_pid,SIGKILL);  
-        if(cli_args->is_attachable) kill(cli_args->attachable_pid,SIGKILL);  
+        else if(cli_args->is_attachable) kill(cli_args->attachable_pid,SIGKILL);  
 
         wait(NULL); 
 
@@ -163,9 +163,7 @@ void StartTracemeSession(struct CLIArguments *cli_args){
     // child process 
     if(child == 0) {
         // start tracing 
-        
-        cli_args->exec_pid = getpid() ; 
-        printf("[%d] %s  \n",cli_args->exec_pid,filename);
+
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         char execute_cmd[2+strlen(filename)];
         sprintf(execute_cmd,"./%s",filename);
@@ -182,13 +180,16 @@ void StartTracemeSession(struct CLIArguments *cli_args){
         int is_step = 1 ; 
         int userSize = 0 ; 
         char ch ; 
+
+        cli_args->exec_pid = child ; 
+        printf("[%d] %s  \n",cli_args->exec_pid,filename);
         // only exits when child process exits or directly exit from user_input     
         while(1){
             
             wait(&child_status); // waits for the kernel signal to continue. kernel gives the authority to parent process.
             if(WIFEXITED(child_status)) break; 
             ptrace(PTRACE_GETREGS,child,NULL,&regs);
-            
+            printf("PARENT TRACKING %d\n",cli_args->exec_pid);
             // stepper program shell
             ch = fgetc(stdin) ;    
             while(1){
