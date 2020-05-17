@@ -59,6 +59,7 @@ struct CLIArguments argParser(int argc, char *argv[]){
             }
             // attached external process 
             else if(argv[i][1]=='a'){
+                
                 my_args.is_executable = false ; 
                 my_args.is_attachable = true ; 
 

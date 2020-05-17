@@ -146,7 +146,6 @@ int processInput(char *inp,int inpSize, struct user_regs_struct *reg, struct CLI
 
 
 
-
 void StartTracemeSession(struct CLIArguments *cli_args){
     
     char *filename = cli_args->executable_name ; 

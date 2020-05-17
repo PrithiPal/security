@@ -8,7 +8,6 @@ int main(){
     while(i--){
         printf("Counter  ; %d\n",i);
         sleep(1);
-        
     }
 
     exit(1);
