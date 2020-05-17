@@ -246,7 +246,7 @@ You lose!
 Nice. Our number is correct. This function analysis is one of those examples where x86 helps us better understanding the mathematical operation. The de-compiled C like output did not gave good human interpretation(it's possible expert reverse-engineers can do without x86).
 
 7. The next function ``func3()`` is easy. 
-``
+```
 void func3(uint param_1)
 
 {
@@ -260,7 +260,7 @@ void func3(uint param_1)
   puts("You haven\'t lost yet!");
   return;
 }
-``
+```
 . The equation formed here is ``` e^p = 26489122129.84347153 ``` which yields 24. Its a good number again.
 ```
 root@07acf29d2533:/home/vm/RE_Labs# ./combination 4 18 31490 24
